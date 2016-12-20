@@ -2,6 +2,7 @@ package com.davidsouther.scarnesdice;
 
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.os.Handler;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -12,16 +13,20 @@ public class MainActivity extends AppCompatActivity {
 
     private TextView playerScoreText;
     private TextView computerScoreText;
-    private TextView frameScoreText;
-    private TextView computerActionText;
     private TextView turnScoreText;
+    private TextView actionText;
     private ImageView dieView;
 
-    private int frame;
+    private int currentTurn;
     private int playerTotal;
     private int computerTotal;
 
+    private Players whosTurn = Players.PLAYER;
+    private int computerTurns = 0;
+
     private Random random;
+
+    final Handler timerHandler = new Handler();
 
     public MainActivity() {
         this(new Random());
@@ -37,26 +42,112 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         dieView = (ImageView) findViewById(R.id.dieView);
+        computerScoreText =(TextView) findViewById(R.id.computerScoreText);
         playerScoreText = (TextView) findViewById(R.id.playerScoreText);
-        frameScoreText = (TextView) findViewById(R.id.turnScoreText);
+        turnScoreText = (TextView) findViewById(R.id.turnScoreText);
+        actionText = (TextView) findViewById(R.id.computerAction);
 
         resetScores();
     }
 
-    public void roll(View view) {
-        frame = rollDice();
-        playerTotal += frame;
+    @Override
+    public void onPause() {
+        super.onPause();
+    }
 
+    public void roll(View view) {
+        int frame = rollDice();
+
+        if (frame == 1) {
+            changePlayers();
+            actionText.setText("A 1! Changing players!");
+            turnScoreText.setText("");
+            resetTurn();
+        } else {
+            actionText.setText("");
+            currentTurn += frame;
+            turnScoreText.setText(String.valueOf(currentTurn));
+            checkForWin();
+        }
+    }
+
+    private void computerTurn() {
+        if (computerTurns < 3 || currentTurn < (3.5 * computerTurns)) {
+            roll(null);
+            computerTurns += 1;
+        } else {
+            hold(null);
+        }
+    }
+
+    private void computerTurnIn500() {
+        timerHandler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                computerTurn();
+                if (whosTurn == Players.COMPUTER) {
+                    computerTurnIn500();
+                }
+            }
+        }, 500);
+    }
+
+    private void checkForWin() {
+        switch (whosTurn) {
+            case PLAYER: if (playerTotal + currentTurn > 100) playerWins(); break;
+            case COMPUTER: if (computerTotal + currentTurn > 100) computerWins(); break;
+        }
+    }
+
+    private void playerWins() {
+        dieView.setImageResource(R.drawable.player_wins);
+    }
+
+    private void computerWins() {
+        dieView.setImageResource(R.drawable.computer_wins);
+    }
+
+    private void changePlayers() {
+        switch (whosTurn) {
+            case PLAYER:
+                whosTurn = Players.COMPUTER;
+                computerTurnIn500();
+                break;
+            case COMPUTER:
+                whosTurn = Players.PLAYER;
+                break;
+        }
+    }
+
+    private void playerScores(int turnTotal) {
+        actionText.setText(String.format("Player scores %d", turnTotal));
+        playerTotal += turnTotal;
         playerScoreText.setText(String.valueOf(playerTotal));
-        frameScoreText.setText(String.valueOf(frame));
+    }
+
+    private void computerScores(int turnTotal) {
+        actionText.setText(String.format("Computer scores %d", turnTotal));
+        computerTotal += turnTotal;
+        computerScoreText.setText(String.valueOf(computerTotal));
     }
 
     public void hold(View view) {
-
+        switch (whosTurn) {
+            case PLAYER:
+                playerScores(currentTurn);
+                break;
+            case COMPUTER:
+                computerScores(currentTurn);
+                break;
+        }
+        resetTurn();
+        changePlayers();
     }
 
     public void reset(View view) {
         resetScores();
+        dieView.setImageResource(R.drawable.empty);
+        whosTurn = this.random.nextBoolean() ? Players.PLAYER : Players.COMPUTER;
     }
 
     private int rollDice() {
@@ -79,11 +170,20 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void resetScores() {
-        frame = 0;
+        resetTurn();
+
         playerTotal = 0;
         computerTotal = 0;
 
-        frameScoreText.setText("");
+        computerScoreText.setText("0");
+        playerScoreText.setText("0");
+    }
+
+    private void resetTurn() {
+        currentTurn = 0;
+        computerTurns = 0;
+        turnScoreText.setText("");
+        dieView.setImageResource(R.drawable.empty);
     }
 }
 
@@ -91,4 +191,9 @@ class BadRollException extends RuntimeException {
     public BadRollException(int roll) {
         super(String.format("Tried to roll a six-sided dice and got %d", roll));
     }
+}
+
+enum Players {
+    PLAYER,
+    COMPUTER,
 }

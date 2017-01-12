@@ -1,5 +1,6 @@
 package com.davidsouther.scarnesdice;
 
+import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.os.Handler;
@@ -26,8 +27,6 @@ public class MainActivity extends AppCompatActivity {
 
     private Random random;
 
-    final Handler timerHandler = new Handler();
-
     public MainActivity() {
         this(new Random());
     }
@@ -47,6 +46,8 @@ public class MainActivity extends AppCompatActivity {
         turnScoreText = (TextView) findViewById(R.id.turnScoreText);
         actionText = (TextView) findViewById(R.id.computerAction);
 
+        actionText.setText(String.format("%d", 5));
+
         resetScores();
     }
 
@@ -60,7 +61,7 @@ public class MainActivity extends AppCompatActivity {
 
         if (frame == 1) {
             changePlayers();
-            actionText.setText("A 1! Changing players!");
+            actionText.setText(R.string.change_players);
             turnScoreText.setText("");
             resetTurn();
         } else {
@@ -80,6 +81,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    final Handler timerHandler = new Handler();
     private void computerTurnIn500() {
         timerHandler.postDelayed(new Runnable() {
             @Override
@@ -94,17 +96,22 @@ public class MainActivity extends AppCompatActivity {
 
     private void checkForWin() {
         switch (whosTurn) {
-            case PLAYER: if (playerTotal + currentTurn > 100) playerWins(); break;
+            case PLAYER: if (playerTotal + currentTurn > 25) playerWins(); break;
             case COMPUTER: if (computerTotal + currentTurn > 100) computerWins(); break;
         }
     }
 
+    public static final String USER_SCORE = "com.davidsouther.scarne.USER_SCORE";
     private void playerWins() {
-        dieView.setImageResource(R.drawable.player_wins);
+        Intent intent = new Intent(this, WinActivity.class);
+        intent.putExtra(USER_SCORE, String.valueOf(playerTotal + currentTurn));
+        startActivity(intent);
+        resetScores();
     }
 
     private void computerWins() {
-        dieView.setImageResource(R.drawable.computer_wins);
+        startActivity(new Intent(this, LoseActivity.class));
+        resetScores();
     }
 
     private void changePlayers() {
@@ -120,7 +127,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void playerScores(int turnTotal) {
-        actionText.setText(String.format("Player scores %d", turnTotal));
+        actionText.setText(String.format(
+                getString(R.string.player_scores), turnTotal));
         playerTotal += turnTotal;
         playerScoreText.setText(String.valueOf(playerTotal));
     }
@@ -147,6 +155,7 @@ public class MainActivity extends AppCompatActivity {
     public void reset(View view) {
         resetScores();
         dieView.setImageResource(R.drawable.empty);
+        dieView.setContentDescription("Empty die face");
         whosTurn = this.random.nextBoolean() ? Players.PLAYER : Players.COMPUTER;
     }
 
@@ -166,6 +175,7 @@ public class MainActivity extends AppCompatActivity {
                 throw new BadRollException(roll);
         }
         dieView.setImageResource(die);
+        dieView.setContentDescription(String.format(getString(R.string.die_face), die));
         return roll;
     }
 

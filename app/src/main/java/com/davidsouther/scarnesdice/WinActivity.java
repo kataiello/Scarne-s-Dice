@@ -17,8 +17,8 @@ public class WinActivity extends AppCompatActivity {
         Intent intent = getIntent();
         String score = intent.getStringExtra(MainActivity.USER_SCORE);
         ((TextView)findViewById(R.id.scoreText))
-                .setText(String.format("You scored %d", score));
-        
+                .setText(String.format("You scored %s", score));
+
         ((Button)findViewById(R.id.playAgainButton))
             .setOnClickListener(new View.OnClickListener() {
                 @Override

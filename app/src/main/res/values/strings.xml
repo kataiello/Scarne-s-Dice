@@ -8,4 +8,6 @@
     <string name="change_players">Rolled a 1! Changing players!</string>
     <string name="player_scores">Player scores %d</string>
     <string name="die_face">Showing die with %d pips</string>
+
+    <string name="sign_in">Sign in</string>
 </resources>

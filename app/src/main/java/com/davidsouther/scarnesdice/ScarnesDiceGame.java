@@ -16,10 +16,29 @@ public class ScarnesDiceGame
     private int player2Score;
     private int currentTurn;
 
-    private Players currentPlayer;
+    private MultiPlayers currentPlayer;
 
 
     public ScarnesDiceGame() {
+
+    }
+
+    public ScarnesDiceGame(String player1, String player2, MultiPlayers currentPlayer) {
+        id = String.format("%s_%s", sanitizeEmail(player1), sanitizeEmail(player2));
+
+        this.player1 = player1;
+        this.player2 = player2;
+        this.currentPlayer = currentPlayer;
+
+        lastRoll = currentTurn = player1Score = player2Score = 0;
+    }
+
+    public static String sanitizeEmail(String email) {
+        return email.replace('.', '-')
+                .replace('#', '-')
+                .replace('$', '-')
+                .replace('[', '-')
+                .replace(']', '-');
 
     }
 
@@ -79,11 +98,16 @@ public class ScarnesDiceGame
         this.currentTurn = currentTurn;
     }
 
-    public Players getCurrentPlayer() {
+    public MultiPlayers getCurrentPlayer() {
         return currentPlayer;
     }
 
-    public void setCurrentPlayer(Players currentPlayer) {
+    public void setCurrentPlayer(MultiPlayers currentPlayer) {
         this.currentPlayer = currentPlayer;
     }
+}
+
+enum MultiPlayers {
+    PLAYER1,
+    PLAYER2
 }

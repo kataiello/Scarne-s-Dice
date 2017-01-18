@@ -15,6 +15,7 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
 import java.util.Random;
 
@@ -31,6 +32,8 @@ public class MainActivity extends AppCompatActivity {
     private FirebaseUser mFirebaseUser;
     private String mUserEmail;
     private PlayerState state;
+
+    private ScarnesDiceGame game;
 
     private DatabaseReference mFirebaseDatabase;
 
@@ -117,8 +120,98 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void startGame(PlayerState newState) {
-        
+        game = new ScarnesDiceGame(state.getEmail(), newState.getEmail(),
+                random.nextBoolean() ? MultiPlayers.PLAYER1 : MultiPlayers.PLAYER2);
+
+        mFirebaseDatabase.child("games").child(game.getId()).setValue(game);
+
+        mFirebaseDatabase.child("games").child(game.getId()).addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                game = dataSnapshot.getValue(ScarnesDiceGame.class);
+                updateGameView();
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        });
+
     }
+
+    private void updateGameView() {
+        //look at latest value of game and update UI using all of its values
+        //TODO update scores
+        playerScoreText.setText(String.valueOf(game.getPlayer1Score()));
+        computerScoreText.setText(String.valueOf(game.getPlayer2Score()));
+        turnScoreText.setText(String.valueOf(game.getCurrentTurn()));
+        //get last roll, display that die face
+        int roll = game.getLastRoll();
+
+        if(roll == 1) {
+            actionText.setText(R.string.change_players);
+        } else if(currentPlayer()) {
+            actionText.setText("It is your turn!");
+        } else {
+            actionText.setText("Waiting for other player");
+        }
+
+        if(roll > 0) {
+            showRoll(roll);
+            checkForWin();
+        }
+
+    }
+
+    public void showRoll(int roll) {
+        int die;
+        switch(roll) {
+            case 1: die = R.drawable.dice1; break;
+            case 2: die = R.drawable.dice2; break;
+            case 3: die = R.drawable.dice3; break;
+            case 4: die = R.drawable.dice4; break;
+            case 5: die = R.drawable.dice5; break;
+            case 6: die = R.drawable.dice6; break;
+            default:
+                throw new BadRollException(roll);
+        }
+        dieView.setImageResource(die);
+        dieView.setContentDescription(String.format(getString(R.string.die_face), die));
+    }
+
+    public boolean currentPlayer() {
+        return game.getCurrentPlayer() == MultiPlayers.PLAYER1;
+    }
+
+    private void checkForWin() {
+        switch (game.getCurrentPlayer()) {
+            case PLAYER1: if (game.getPlayer1Score() + game.getCurrentTurn() > 25) playerWins(); break;
+            case PLAYER2: if (game.getPlayer2Score() + game.getCurrentTurn() > 100) computerWins(); break;
+        }
+    }
+
+    public static final String USER_SCORE = "com.davidsouther.scarne.USER_SCORE";
+    private void playerWins() {
+        Intent intent = new Intent(this, WinActivity.class);
+        intent.putExtra(USER_SCORE, String.valueOf(game.getPlayer1Score() + game.getCurrentTurn()));
+        startActivity(intent);
+        resetScores();
+    }
+
+    private void computerWins() {
+        startActivity(new Intent(this, LoseActivity.class));
+        resetScores();
+    }
+
+    private void resetScores() {
+        actionText.setText(String.format(
+        getString(R.string.player_scores), game.getCurrentTurn()));
+        game.setPlayer1Score(game.getPlayer1Score() + game.getCurrentTurn());
+        playerScoreText.setText(String.valueOf(game.getPlayer1Score()));
+    }
+
+
 
     public void roll(View view) {
 //        int frame = rollDice();
@@ -165,18 +258,7 @@ public class MainActivity extends AppCompatActivity {
 //        }
 //    }
 //
-    public static final String USER_SCORE = "com.davidsouther.scarne.USER_SCORE";
-//    private void playerWins() {
-//        Intent intent = new Intent(this, WinActivity.class);
-//        intent.putExtra(USER_SCORE, String.valueOf(playerTotal + currentTurn));
-//        startActivity(intent);
-//        resetScores();
-//    }
-//
-//    private void computerWins() {
-//        startActivity(new Intent(this, LoseActivity.class));
-//        resetScores();
-//    }
+
 
 //    private void changePlayers() {
 //        switch (whosTurn) {

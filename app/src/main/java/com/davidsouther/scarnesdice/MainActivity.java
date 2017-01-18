@@ -21,14 +21,17 @@ public class MainActivity extends AppCompatActivity {
     private TextView actionText;
     private ImageView dieView;
 
+    //individual to each phone
     private FirebaseAuth mFirebaseAuth;
     private FirebaseUser mFirebaseUser;
     private String mUserEmail;
 
+    //shared between the phones
     private int currentTurn;
     private int playerTotal;
     private int computerTotal;
 
+    //shared between the phones
     private Players whosTurn = Players.PLAYER;
     private int computerTurns = 0;
 
